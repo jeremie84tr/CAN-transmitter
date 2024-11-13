@@ -15,14 +15,6 @@ int CANFrame::computeCrc() {
 }
 
 
-// ------------------------------ ListeningThreadParameters ------------------------------
-
-ListeningThreadParameters::ListeningThreadParameters(CAN* can, void (*callback)(CANFrame*)) {
-    this->can = can;
-    this->callback = callback;
-}
-
-
 // ------------------------------ CAN ------------------------------
 
 CAN::CAN(int rxGPIO, int txGPIO, int transmissionSpeed) {
@@ -35,7 +27,10 @@ CAN::CAN(int rxGPIO, int txGPIO, int transmissionSpeed) {
     this->listeningTask = NULL;
 }
 
-void CAN::listeningThreadFunction(ListeningThreadParameters* params) {
+void CAN::listeningThreadFunction(void* param) {
+    // Cast the void pointer to ListeningThreadParameters*
+    ListeningThreadParameters* params = static_cast<ListeningThreadParameters*>(param);
+
     DataCatcher* dataCatcher = new DataCatcher(params->can, params->callback);
     while(1) {
         int read = digitalRead(params->can->rxGPIO);
@@ -50,11 +45,19 @@ void CAN::listeningThreadFunction(ListeningThreadParameters* params) {
 }
 
 void CAN::listen(void (*callback)(CANFrame*)) {
-    xTaskCreate(listeningThreadFunction, "linstening", 1024, new ListeningThreadParameters(this, callback), tskIDLE_PRIORITY, &listeningTask);
+    xTaskCreate(listeningThreadFunction, "linstening", 1024, new ListeningThreadParameters(this, callback), tskIDLE_PRIORITY, listeningTask);
 }
 
 void CAN::stop() {
     vTaskDelete(listeningTask);
+}
+
+
+// ------------------------------ ListeningThreadParameters ------------------------------
+
+ListeningThreadParameters::ListeningThreadParameters(CAN* can, void (*callback)(CANFrame*)) {
+    this->can = can;
+    this->callback = callback;
 }
 
 
