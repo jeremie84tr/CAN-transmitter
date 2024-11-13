@@ -2,6 +2,10 @@
 
 // ------------------------------ CANFrame ------------------------------
 
+CANFrame::CANFrame() {
+    
+}
+
 CANFrame::CANFrame(int identifier) {
     this->arbitrationID = identifier;
 }
@@ -11,36 +15,46 @@ int CANFrame::computeCrc() {
 }
 
 
+// ------------------------------ ListeningThreadParameters ------------------------------
+
+ListeningThreadParameters::ListeningThreadParameters(CAN* can, void (*callback)(CANFrame*)) {
+    this->can = can;
+    this->callback = callback;
+}
+
+
 // ------------------------------ CAN ------------------------------
 
-CAN::CAN(int rxGPIO, int txGPIO) {
+CAN::CAN(int rxGPIO, int txGPIO, int transmissionSpeed) {
     this->rxGPIO = rxGPIO;
     pinMode(rxGPIO, INPUT);
     this->txGPIO = txGPIO;
     pinMode(txGPIO, OUTPUT);
+    this->transmissionSpeed = transmissionSpeed;
     this->status = UNKNOWN;
-    this->listeningThread = nullptr;
+    this->listeningTask = NULL;
 }
 
-void CAN::listeningThreadFunction(CAN* can, void (*callback)(CANFrame*)) {
-    DataCatcher* dataCatcher = new DataCatcher(can, callback);
+void CAN::listeningThreadFunction(ListeningThreadParameters* params) {
+    DataCatcher* dataCatcher = new DataCatcher(params->can, params->callback);
     while(1) {
-        int read = digitalRead(can->rxGPIO);
+        int read = digitalRead(params->can->rxGPIO);
         if (read == HIGH) {
             dataCatcher->onNext(0);
         }
         if (read == LOW) {
             dataCatcher->onNext(1);
         }
+        usleep(1000000 / params->can->transmissionSpeed);
     }
 }
 
 void CAN::listen(void (*callback)(CANFrame*)) {
-    listeningThread = new std::thread(listeningThreadFunction, this, callback);
+    xTaskCreate(listeningThreadFunction, "linstening", 1024, new ListeningThreadParameters(this, callback), tskIDLE_PRIORITY, &listeningTask);
 }
 
 void CAN::stop() {
-    listeningThread->detach();
+    vTaskDelete(listeningTask);
 }
 
 
