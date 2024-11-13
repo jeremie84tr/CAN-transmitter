@@ -40,7 +40,7 @@ class CAN {
     int rxGPIO;
     int txGPIO;
     std::thread* listeningThread;
-    void listeningThreadFunction(void (*callback)(CANFrame*));
+    static void listeningThreadFunction(CAN* can, void (*callback)(CANFrame*));
 public:
     eCANStatus status;
     CAN(int rxGPIO, int txGPIO);

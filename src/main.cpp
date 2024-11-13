@@ -17,5 +17,8 @@ void loop() {
 
 // put function definitions here:
 void readInformation(CANFrame* frame) {
-  Serial.print("test");
+  Serial.print("frame ID :");
+  Serial.print(frame->arbitrationID);
+  Serial.print(" dataLength :");
+  Serial.print(frame->control & 0b1111);
 }

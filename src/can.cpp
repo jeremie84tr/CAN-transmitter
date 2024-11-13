@@ -22,10 +22,10 @@ CAN::CAN(int rxGPIO, int txGPIO) {
     this->listeningThread = nullptr;
 }
 
-void CAN::listeningThreadFunction(void (*callback)(CANFrame*)) {
-    DataCatcher* dataCatcher = new DataCatcher(this, callback);
+void CAN::listeningThreadFunction(CAN* can, void (*callback)(CANFrame*)) {
+    DataCatcher* dataCatcher = new DataCatcher(can, callback);
     while(1) {
-        int read = digitalRead(rxGPIO);
+        int read = digitalRead(can->rxGPIO);
         if (read == HIGH) {
             dataCatcher->onNext(0);
         }
@@ -36,7 +36,7 @@ void CAN::listeningThreadFunction(void (*callback)(CANFrame*)) {
 }
 
 void CAN::listen(void (*callback)(CANFrame*)) {
-    listeningThread = new std::thread(listeningThreadFunction, callback);
+    listeningThread = new std::thread(listeningThreadFunction, this, callback);
 }
 
 void CAN::stop() {
