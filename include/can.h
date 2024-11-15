@@ -32,6 +32,7 @@ public:
     bool* data;
     int crc;
     int acknowledgement;
+    CANFrame();
     CANFrame(int identifier);
     int computeCrc();
 };
@@ -39,13 +40,21 @@ public:
 class CAN {
     int rxGPIO;
     int txGPIO;
-    std::thread* listeningThread;
-    static void listeningThreadFunction(CAN* can, void (*callback)(CANFrame*));
+    int transmissionSpeed;
+    TaskHandle_t* listeningTask;
+    static void listeningThreadFunction(void* param);
 public:
     eCANStatus status;
-    CAN(int rxGPIO, int txGPIO);
+    CAN(int rxGPIO, int txGPIO, int transmissionSpeed);
     void listen(void (*callback)(CANFrame*));
     void stop();
+};
+
+class ListeningThreadParameters {
+public:
+    CAN* can;
+    void (*callback)(CANFrame*);
+    ListeningThreadParameters(CAN* can, void (*callback)(CANFrame*));
 };
 
 // Enumération pour représenter les différents champs de la trame

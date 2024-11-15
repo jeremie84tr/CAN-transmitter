@@ -35,14 +35,17 @@ CAN::CAN(int rxGPIO, int txGPIO, int transmissionSpeed) {
     this->listeningTask = NULL;
 }
 
-void CAN::listeningThreadFunction(ListeningThreadParameters* params) {
+void CAN::listeningThreadFunction(void* param) {
+    ListeningThreadParameters* params = (ListeningThreadParameters*) param;
     DataCatcher* dataCatcher = new DataCatcher(params->can, params->callback);
     while(1) {
         int read = digitalRead(params->can->rxGPIO);
         if (read == HIGH) {
+            Serial.print("0");
             dataCatcher->onNext(0);
         }
         if (read == LOW) {
+            Serial.print("1");
             dataCatcher->onNext(1);
         }
         usleep(1000000 / params->can->transmissionSpeed);
@@ -50,7 +53,7 @@ void CAN::listeningThreadFunction(ListeningThreadParameters* params) {
 }
 
 void CAN::listen(void (*callback)(CANFrame*)) {
-    xTaskCreate(listeningThreadFunction, "linstening", 1024, new ListeningThreadParameters(this, callback), tskIDLE_PRIORITY, &listeningTask);
+    xTaskCreate(listeningThreadFunction, "linstening", 1024, new ListeningThreadParameters(this, callback), tskIDLE_PRIORITY, listeningTask);
 }
 
 void CAN::stop() {
