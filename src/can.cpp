@@ -28,16 +28,16 @@ CAN::CAN(int rxGPIO, int txGPIO, int transmissionSpeed) {
 }
 
 void CAN::listeningThreadFunction(void* param) {
-    // Cast the void pointer to ListeningThreadParameters*
-    ListeningThreadParameters* params = static_cast<ListeningThreadParameters*>(param);
-
+    ListeningThreadParameters* params = (ListeningThreadParameters*) param;
     DataCatcher* dataCatcher = new DataCatcher(params->can, params->callback);
     while(1) {
         int read = digitalRead(params->can->rxGPIO);
         if (read == HIGH) {
+            Serial.print("0");
             dataCatcher->onNext(0);
         }
         if (read == LOW) {
+            Serial.print("1");
             dataCatcher->onNext(1);
         }
         usleep(1000000 / params->can->transmissionSpeed);
